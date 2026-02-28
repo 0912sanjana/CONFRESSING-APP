@@ -1,0 +1,12 @@
+node_modules/
+dist/
+build/
+.env
+.venv
+__pycache__/
+*.pyc
+/Backend/target/
+/Frontend/node_modules/
+/Frontend/dist/
+/.vscode/
+*.log

@@ -1,0 +1,103 @@
+﻿
+> @figma/my-make-file@0.0.1 build
+> vite build
+
+[36mvite v6.3.5 [32mbuilding for production...[36m[39m
+transforming...
+[32mΓ£ô[39m 21 modules transformed.
+node.exe : 
+[31mΓ£ù[39m Build 
+failed in 4.30s
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([31mΓ£ù[39m   
+  Build failed in 4    
+.30s:String) [], R    
+emoteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+[31merror during 
+build:
+[31m[vite:esbuild] 
+Transform failed with 
+1 error:
+C:/Users/Satwik/Downloa
+ds/Hybrid Video Confres
+sing/Frontend/src/app/p
+ages/MeetingRoom.tsx:46
+1:0: ERROR: 
+Unterminated string 
+literal[31m
+file: [36mC:/Users/Sat
+wik/Downloads/Hybrid 
+Video Confressing/Front
+end/src/app/pages/Meeti
+ngRoom.tsx:461:0[31m
+[33m
+[33mUnterminated 
+string literal[33m
+459|    );
+460|  }
+461|  
+   |  ^
+[31m
+    at 
+failureErrorWithLog (C:
+\Users\Satwik\Downloads
+\Hybrid Video Confressi
+ng\Frontend\node_module
+s\esbuild\lib\main.js:1
+467:15)
+    at C:\Users\Satwik\
+Downloads\Hybrid Video 
+Confressing\Frontend\no
+de_modules\esbuild\lib\
+main.js:736:50
+    at responseCallback
+s.<computed> (C:\Users\
+Satwik\Downloads\Hybrid
+ Video Confressing\Fron
+tend\node_modules\esbui
+ld\lib\main.js:603:9)
+    at 
+handleIncomingPacket (C
+:\Users\Satwik\Download
+s\Hybrid Video Confress
+ing\Frontend\node_modul
+es\esbuild\lib\main.js:
+658:12)
+    at 
+Socket.readFromStdout (
+C:\Users\Satwik\Downloa
+ds\Hybrid Video Confres
+sing\Frontend\node_modu
+les\esbuild\lib\main.js
+:581:7)
+    at Socket.emit 
+(node:events:508:28)
+    at addChunk (node:i
+nternal/streams/readabl
+e:559:12)
+    at readableAddChunk
+PushByteMode (node:inte
+rnal/streams/readable:5
+10:3)
+    at Readable.push (n
+ode:internal/streams/re
+adable:390:5)
+    at 
+Pipe.onStreamRead (node
+:internal/stream_base_c
+ommons:189:23)[39m

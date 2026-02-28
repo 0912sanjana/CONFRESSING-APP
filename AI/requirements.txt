@@ -1,0 +1,4 @@
+python-dotenv
+confluent-kafka
+boto3
+openai-whisper
