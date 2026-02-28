@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 import {
   Mic, MicOff, Video, VideoOff, Monitor, PhoneOff,
-  MessageSquare, Users, Sparkles, X, Wifi, StopCircle, Disc,
+  MessageSquare, Users, Sparkles, X, Wifi, Pause, Play, Disc,
   Settings, Send, LayoutDashboard, ArrowUpRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -54,73 +54,105 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
   const [micLocked, setMicLocked] = useState(devUser.role !== 'teacher');
   const [camLocked, setCamLocked] = useState(devUser.role !== 'teacher');
   const [screenLocked, setScreenLocked] = useState(devUser.role !== 'teacher');
+  const [isRecordingPaused, setIsRecordingPaused] = useState(false);
+  const recordingStartedRef = useRef(false);
+  const recordingIntendedStopRef = useRef(false);
+
+  // Auto-start recording for teacher
+  useEffect(() => {
+    if (devUser.role === 'teacher' && connectionState === 'connected' && !isRecording && !recordingStartedRef.current) {
+      recordingStartedRef.current = true;
+      recordingIntendedStopRef.current = false;
+      handleToggleRecording();
+    }
+  }, [devUser.role, connectionState, isRecording]);
+
+  const setupMediaRecorder = (stream: MediaStream) => {
+    let mimeOptions = 'video/webm;codecs=vp8,opus';
+    if (!MediaRecorder.isTypeSupported(mimeOptions)) {
+      mimeOptions = 'video/webm';
+    }
+
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: mimeOptions });
+
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        recordedChunks.current.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = async () => {
+      // If we didn't intend to stop (e.g. user clicked "Stop sharing" on Chrome's built-in banner)
+      if (!recordingIntendedStopRef.current) {
+        console.log("Stream ended but class isn't over. Falling back to camera/mic.");
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          setupMediaRecorder(fallbackStream);
+        } catch (e) {
+          console.error("Fallback recording failed", e);
+        }
+        return;
+      }
+
+      // If we *did* intend to stop (End Class button)
+      const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+      try {
+        await uploadRecording(activeMeetingId, blob);
+        console.log("Recording uploaded successfully");
+        setMediaError("Recording saved to server");
+      } catch (e) {
+        console.error("Failed to upload recording", e);
+        setMediaError("Failed to upload recording to server");
+      }
+      setTimeout(() => setMediaError(""), 3000);
+      recordedChunks.current = [];
+      setIsRecording(false);
+      setIsRecordingPaused(false);
+    };
+
+    mediaRecorderRef.current = mediaRecorder;
+    mediaRecorder.start(1000);
+  };
 
   const handleToggleRecording = async () => {
     if (isRecording) {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      if (mediaRecorderRef.current) {
+        if (!isRecordingPaused) {
+          mediaRecorderRef.current.stream.getTracks().forEach(track => track.enabled = false);
+          setIsRecordingPaused(true);
+        } else {
+          mediaRecorderRef.current.stream.getTracks().forEach(track => track.enabled = true);
+          setIsRecordingPaused(false);
+        }
       }
-      try {
-        await stopRecording(activeMeetingId);
-      } catch (e) { }
-      setIsRecording(false);
     } else {
       try {
-        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-        let combinedStream = displayStream;
+        recordingIntendedStopRef.current = false;
+
+        // Try getting screen share first
+        let combinedStream;
         try {
-          const mStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          combinedStream = new MediaStream([...displayStream.getTracks(), ...mStream.getAudioTracks()]);
-        } catch (e) {
-          console.warn("Could not get mic for recording", e);
-        }
-
-        // Use a widely supported mime type, fallback if not explicitly supported
-        let mimeOptions = 'video/webm;codecs=vp8,opus';
-        if (!MediaRecorder.isTypeSupported(mimeOptions)) {
-          mimeOptions = 'video/webm';
-        }
-
-        const mediaRecorder = new MediaRecorder(combinedStream, { mimeType: mimeOptions });
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            recordedChunks.current.push(event.data);
-          }
-        };
-
-        mediaRecorder.onstop = async () => {
-          const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'browser' }, audio: true });
+          combinedStream = displayStream;
 
           try {
-            await uploadRecording(activeMeetingId, blob);
-            console.log("Recording uploaded successfully");
-            setMediaError("Recording saved to server");
+            const mStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            combinedStream = new MediaStream([...displayStream.getTracks(), ...mStream.getAudioTracks()]);
           } catch (e) {
-            console.error("Failed to upload recording", e);
-            setMediaError("Failed to upload recording to server");
+            console.warn("Could not get mic for recording overlay", e);
           }
-          setTimeout(() => setMediaError(""), 3000);
+        } catch (e) {
+          console.warn("Could not get display media. Falling back to camera+mic", e);
+          const mStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          combinedStream = mStream;
+        }
 
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          document.body.appendChild(a);
-          a.style.display = 'none';
-          a.href = url;
-          a.download = `meeting-${activeMeetingId}-recording.webm`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-          recordedChunks.current = [];
-          setIsRecording(false);
-        };
-
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start();
+        setupMediaRecorder(combinedStream);
         await startRecording(activeMeetingId);
         setIsRecording(true);
+        setIsRecordingPaused(false);
       } catch (e: any) {
-        console.error("Failed to toggle recording:", e);
+        console.error("Failed to start auto-recording:", e);
         setMediaError("Recording failed or permission denied.");
         setTimeout(() => setMediaError(""), 5000);
       }
@@ -270,9 +302,11 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
       recognition.onend = () => {
         // Automatically restart speech recognition after silence or completion
         if (!recognition.stoppedByError && isMicrophoneEnabled) {
-          try {
-            recognition.start();
-          } catch (e) { }
+          setTimeout(() => {
+            try {
+              recognition.start();
+            } catch (e) { }
+          }, 1000);
         }
       };
 
@@ -396,18 +430,6 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
     }
   };
 
-  useEffect(() => {
-    if (connectionState === 'connected' && activeMeetingId) {
-      fetch(`http://localhost:8080/api/meetings/${activeMeetingId}/attendance`, {
-        headers: {
-          'x-dev-user-id': devUser.id,
-          'x-dev-user-name': devUser.name,
-          'x-dev-user-email': devUser.email,
-          'x-dev-user-role': devUser.role,
-        }
-      }).catch(e => console.error("Failed to mark attendance", e));
-    }
-  }, [connectionState, activeMeetingId]);
 
   return (
     <>
@@ -838,14 +860,17 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
             <>
               <button
                 onClick={handleToggleRecording}
+                disabled={!isRecording}
                 className={"flex flex-col items-center justify-center w-14 h-14 rounded-2xl transition-all " + (
-                  isRecording
-                    ? 'bg-slate-800 text-red-500 hover:bg-slate-700'
-                    : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                  isRecordingPaused
+                    ? 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20'
+                    : isRecording
+                      ? 'bg-slate-800 text-amber-500 hover:bg-slate-700 text-amber-400'
+                      : 'bg-slate-800 text-slate-400 opacity-50 cursor-not-allowed'
                 )}
               >
-                {isRecording ? <StopCircle size={24} /> : <Disc size={24} />}
-                <span className="text-[10px] mt-1 font-medium">{isRecording ? "Stop" : "Record"}</span>
+                {isRecordingPaused ? <Play size={24} /> : <Pause size={24} />}
+                <span className="text-[10px] mt-1 font-medium">{!isRecording ? "Starting..." : isRecordingPaused ? "Resume" : "Pause"}</span>
               </button>
 
               <div className="h-8 w-px bg-slate-700 mx-2"></div>
@@ -855,15 +880,14 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
           <button
             onClick={async () => {
               if (devUser.role === 'teacher' && activeMeetingId) {
-                const saveRec = window.confirm("Do you want to publish this recording to students?");
+                const saveRec = window.confirm("Do you want to end the class and publish the recording?");
                 try {
-                  if (saveRec && !isRecording) {
-                    await stopRecording(activeMeetingId);
-                  } else if (isRecording) {
-                    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-                      mediaRecorderRef.current.stop();
-                      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-                    }
+                  if (saveRec && isRecording && mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+                    // Set our flag so onstop knows to upload instead of restarting
+                    recordingIntendedStopRef.current = true;
+                    // This triggers onstop which uploads the video
+                    mediaRecorderRef.current.stop();
+                    mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
                     await stopRecording(activeMeetingId);
                   }
                   await endMeeting(activeMeetingId);

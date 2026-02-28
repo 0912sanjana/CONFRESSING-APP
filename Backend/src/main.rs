@@ -56,6 +56,7 @@ async fn main() {
         .route("/api/meetings/:id/recording/stop", post(routes::recording_stop))
         .route("/api/meetings/:id/recording/upload", post(routes::recording_upload))
         .route("/api/meetings/:id/recording/video", get(routes::recording_stream))
+        .route("/api/meetings/:id/recording", axum::routing::delete(routes::recording_delete))
         .route("/api/meetings/:id/transcript", get(routes::get_transcript))
         .route("/api/meetings/:id/summary", get(routes::get_summary))
         .route("/api/meetings/:id/mom", get(routes::get_mom))

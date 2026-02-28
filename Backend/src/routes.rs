@@ -560,6 +560,31 @@ pub async fn recording_stream(
     Ok(response)
 }
 
+pub async fn recording_delete(
+    State(st): State<AppState>,
+    Path(meeting_id): Path<Uuid>,
+) -> Result<Json<serde_json::Value>, (StatusCode, String)> {
+    // Attempt to delete physical file, it's okay if it fails (might be already deleted)
+    let path = format!("uploads/{}.webm", meeting_id);
+    let _ = std::fs::remove_file(&path);
+    
+    // In database we permanently delete the recording row
+    sqlx::query("DELETE FROM recordings WHERE meeting_id = $1")
+        .bind(meeting_id)
+        .execute(&st.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    // We also delete the meeting row permanently to remove it from the frontend list
+    sqlx::query("DELETE FROM meetings WHERE id = $1")
+        .bind(meeting_id)
+        .execute(&st.db)
+        .await
+        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+    Ok(Json(serde_json::json!({ "ok": true })))
+}
+
 
 
 pub async fn get_teacher_contribution(

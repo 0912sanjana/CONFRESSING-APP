@@ -82,6 +82,9 @@ export const startRecording = (meetingId: string) =>
 export const stopRecording = (meetingId: string) =>
   fetchApi('/meetings/' + meetingId + '/recording/stop', { method: 'POST' });
 
+export const deleteRecording = (meetingId: string) =>
+  fetchApi(`/meetings/${meetingId}/recording`, { method: 'DELETE' });
+
 export const uploadRecording = async (meetingId: string, blob: Blob) => {
   const res = await fetch(`${API_BASE_URL}/meetings/${meetingId}/recording/upload`, {
     method: 'POST',
@@ -136,3 +139,6 @@ export const insertTranscript = async (meetingId: string, speaker: string, text:
   if (!res.ok) throw new Error('Failed to insert transcript');
   return res.json();
 };
+
+export const getAttendance = (meetingId: string) =>
+  fetchApi<any[]>(`/meetings/${meetingId}/attendance`);

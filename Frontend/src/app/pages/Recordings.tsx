@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Clock, Calendar, Users, Video, Search, Filter, PlayCircle, FileText, Download
+  Clock, Calendar, Users, Video, Search, Filter, PlayCircle, FileText, Download, Trash2
 } from 'lucide-react';
 import { format, differenceInMinutes, differenceInSeconds } from 'date-fns';
-import { getMeetings } from '../api';
+import { getMeetings, deleteRecording } from '../api';
+
+const getLocalUser = () => {
+  const userStr = localStorage.getItem('currentUser');
+  return userStr ? JSON.parse(userStr) : { role: 'student', name: 'Student', email: 'guest@student.com' };
+};
 
 export function Recordings() {
+  const devUser = getLocalUser();
   const navigate = useNavigate();
   const [filter, setFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,6 +143,25 @@ export function Recordings() {
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-500" title="Transcript Ready"></div>
                   <div className="w-2 h-2 rounded-full bg-purple-500" title="MOM Ready"></div>
+                  {devUser.role === 'teacher' && (
+                    <button
+                      onClick={async () => {
+                        if (window.confirm("Are you sure you want to delete this recording?")) {
+                          try {
+                            await deleteRecording(rec.id);
+                            setRecordings(prev => prev.filter(r => r.id !== rec.id));
+                          } catch (e) {
+                            console.error("Failed to delete recording", e);
+                            alert("Failed to delete recording");
+                          }
+                        }
+                      }}
+                      className="ml-2 p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                      title="Delete Recording"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
