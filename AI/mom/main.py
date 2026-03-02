@@ -71,9 +71,12 @@ def run():
         meeting_id = req.get("meeting_id")
         transcript = req.get("transcript")
 
-        if not meeting_id or not transcript:
+        if not meeting_id or transcript is None:
             c.commit(msg)
             continue
+            
+        if not transcript:
+            transcript = "No spoken audio was detected during this session."
 
         mom = simple_mom(transcript)
         out = {"meeting_id": meeting_id, **mom, "created_at": now_ts()}

@@ -50,9 +50,12 @@ def run():
         meeting_id = req.get("meeting_id")
         transcript = req.get("transcript")
 
-        if not meeting_id or not transcript:
+        if not meeting_id or transcript is None:
             c.commit(msg)
             continue
+            
+        if not transcript:
+            transcript = "No spoken audio was detected during this session."
 
         result = tag_transcript(transcript)
         out = {"meeting_id": meeting_id, **result, "created_at": now_ts()}

@@ -71,20 +71,7 @@ export function Dashboard() {
             <Calendar size={18} className="mr-2 text-slate-500" />
             Schedule Class
           </button>
-          <button
-            onClick={async () => {
-              try {
-                const m = await createMeeting({ title: 'Instant Meeting (Direct)', mode: 'online', description: 'Instant Ad-Hoc Session' });
-                navigate(`/meeting/${m.id}`);
-              } catch (e) {
-                console.error('Failed to create instant meeting', e);
-              }
-            }}
-            className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm transition-colors shadow-md shadow-indigo-500/20"
-          >
-            <Video size={18} className="mr-2" />
-            Start Instant Meeting
-          </button>
+
         </div>
       </div>
 
@@ -133,9 +120,9 @@ export function Dashboard() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="flex flex-col space-y-6">
         {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="w-full space-y-6">
 
           {/* Active Session Card (if any) */}
           {(() => {
@@ -202,71 +189,6 @@ export function Dashboard() {
                 ))
               )}
             </div>
-          </div>
-
-        </div>
-
-        {/* Right Sidebar Widgets */}
-        <div className="space-y-6">
-          {/* Engagement Chart */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h3 className="font-bold text-slate-800 mb-4">Student Engagement</h3>
-            <div className="h-48 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={engagementData}>
-                  <defs>
-                    <linearGradient id="colorInteraction" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis hide />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="interaction" stroke="#4f46e5" strokeWidth={2} fillOpacity={1} fill="url(#colorInteraction)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* AI Insights / Notifications */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-            <h3 className="font-bold text-slate-800 mb-4 flex items-center">
-              <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-              AI Insights
-            </h3>
-            <div className="space-y-4">
-              {dashboardData?.insights?.length ? (
-                dashboardData.insights.map((insight: any, i: number) => (
-                  <InsightItem
-                    key={i}
-                    text={insight.text}
-                    time={insight.time}
-                    type={insight.type}
-                  />
-                ))
-              ) : (
-                <div className="text-center py-4 text-slate-400 text-sm">
-                  Waiting for class insights...
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Offline Storage Status */}
-          <div className="bg-slate-50 rounded-xl border border-slate-200 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">Local Storage</h4>
-              <HardDrive size={14} className="text-slate-400" />
-            </div>
-            <div className="w-full bg-slate-200 rounded-full h-2 mb-2">
-              <div className="bg-indigo-500 h-2 rounded-full w-[65%]"></div>
-            </div>
-            <p className="text-xs text-slate-500 flex justify-between">
-              <span>65% Used</span>
-              <span>120GB Free</span>
-            </p>
           </div>
 
         </div>

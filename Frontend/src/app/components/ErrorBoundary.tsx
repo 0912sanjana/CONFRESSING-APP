@@ -33,7 +33,7 @@ export function ErrorBoundary() {
                 </button>
 
                 <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => navigate('/schedule')}
                     className="w-full mt-3 flex items-center justify-center py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-xl transition-colors"
                 >
                     Return to Dashboard

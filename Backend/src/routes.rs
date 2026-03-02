@@ -724,6 +724,7 @@ pub async fn get_live_ai(
 pub struct InsertTranscriptReq {
     pub speaker: String,
     pub text: String,
+    pub time: Option<f32>,
 }
 
 pub async fn insert_transcript(
@@ -734,6 +735,7 @@ pub async fn insert_transcript(
     
     // In demo, we just insert into transcripts table
     let id = Uuid::new_v4();
+    let time = req.time.unwrap_or(0.0);
     sqlx::query(
         "INSERT INTO transcripts (id, meeting_id, speaker_id, text, start_time_offset, end_time_offset) 
          VALUES ($1, $2, $3, $4, $5, $6)"
@@ -742,8 +744,8 @@ pub async fn insert_transcript(
     .bind(meeting_id)
     .bind(&req.speaker)
     .bind(&req.text)
-    .bind(0.0) // Mock offset
-    .bind(0.0) // Mock end offset
+    .bind(time) // Use actual offset
+    .bind(time) // Use actual offset
     .execute(&st.db)
     .await
     .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;

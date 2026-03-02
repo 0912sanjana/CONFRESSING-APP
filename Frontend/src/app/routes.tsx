@@ -1,5 +1,5 @@
 import React from 'react';
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { Layout } from "./components/layout/Layout";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
@@ -40,7 +40,7 @@ export const router = createBrowserRouter([
     element: <Layout role="teacher" />,
     errorElement: <ErrorBoundary />,
     children: [
-      { path: "/dashboard", element: <Dashboard /> },
+      { path: "/dashboard", element: <Navigate to="/schedule" replace /> },
       { path: "/schedule", element: <Schedule /> },
       { path: "/meetings", element: <Meetings /> },
       { path: "/recordings", element: <Recordings /> },

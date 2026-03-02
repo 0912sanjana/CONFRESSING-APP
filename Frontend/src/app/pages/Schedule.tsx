@@ -65,7 +65,7 @@ export function Schedule() {
       alert(`Meeting Scheduled Successfully!\nJoin Link: ${window.location.origin}/meeting/${meeting.id}`);
 
       // Navigate back to dashboard instead of active meeting directly
-      navigate('/dashboard');
+      navigate('/schedule');
     } catch (err: any) {
       console.error("[Schedule] Failed to schedule meeting:", err);
       setError(err.message || 'Failed to schedule meeting');
@@ -75,7 +75,7 @@ export function Schedule() {
   };
 
   const handleClose = () => {
-    navigate('/dashboard');
+    navigate('/schedule');
   };
 
   return (

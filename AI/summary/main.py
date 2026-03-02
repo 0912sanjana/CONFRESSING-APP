@@ -33,10 +33,13 @@ def run():
         meeting_id = req.get("meeting_id")
         transcript = req.get("transcript")  # backend can attach transcript or service can fetch from DB later
 
-        if not meeting_id or not transcript:
+        if not meeting_id or transcript is None:
             print("[summary] invalid payload:", req)
             c.commit(msg)
             continue
+            
+        if not transcript:
+            transcript = "No spoken audio was detected during this session."
 
         result = simple_summary(transcript)
         out = {"meeting_id": meeting_id, **result, "created_at": now_ts()}

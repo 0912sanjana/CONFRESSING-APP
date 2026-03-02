@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Calendar, Video, Plus, Clock } from 'lucide-react';
-import { getDashboard, createMeeting } from '../api';
+import { Calendar, Plus, Clock } from 'lucide-react';
+import { getDashboard } from '../api';
 
 export function Meetings() {
     const navigate = useNavigate();
@@ -24,15 +24,6 @@ export function Meetings() {
         fetchMeetings();
     }, []);
 
-    const handleInstantMeeting = async () => {
-        const userStr = localStorage.getItem('currentUser');
-        try {
-            const m = await createMeeting({ title: 'Instant Meeting (Direct)', mode: 'online', description: 'Instant Ad-Hoc Session' });
-            navigate(`/meeting/${m.id}`);
-        } catch (e) {
-            console.error('Failed to create instant meeting', e);
-        }
-    };
 
     return (
         <div className="space-y-6">
@@ -48,13 +39,6 @@ export function Meetings() {
                     >
                         <Calendar size={18} className="mr-2 text-indigo-600" />
                         Schedule Class
-                    </button>
-                    <button
-                        onClick={handleInstantMeeting}
-                        className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium text-sm transition-colors shadow-md shadow-indigo-500/20"
-                    >
-                        <Video size={18} className="mr-2" />
-                        Start Instant Meeting
                     </button>
                 </div>
             </div>

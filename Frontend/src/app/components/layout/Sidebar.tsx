@@ -50,7 +50,6 @@ export function Sidebar({ role }: SidebarProps) {
 
         {isTeacher ? (
           <>
-            <NavItem to="/dashboard" icon={LayoutDashboard} label="Dashboard" />
             <NavItem to="/meetings" icon={Video} label="Meetings" />
             <NavItem to="/schedule" icon={Calendar} label="Schedule" />
             <NavItem to="/recordings" icon={Radio} label="Recordings" />
@@ -68,7 +67,7 @@ export function Sidebar({ role }: SidebarProps) {
         </div>
         <NavItem to="/transcripts" icon={MessageSquareText} label="Transcripts" />
         <NavItem to="/mom" icon={FileText} label="MOM & Notes" />
-        {isTeacher && <NavItem to="/analytics" icon={BarChart2} label="Analytics & AI" />}
+
 
         <div className="px-3 mt-8 mb-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
           System

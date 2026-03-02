@@ -112,16 +112,7 @@ export const getTeacherContribution = (teacherId: string) =>
   fetchApi<any[]>(`/teachers/${teacherId}/contribution`);
 
 export const getDashboard = async () => {
-  const userStr = localStorage.getItem('currentUser');
-  let userId = devUser.id;
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr);
-      if (user.id) userId = user.id;
-    } catch (e) { }
-  }
-  const res = await fetchApi<any>(`/dashboard/${userId}`);
-  return res;
+  return await fetchApi<any>(`/dashboard/${devUser.id}`);
 };
 
 export const getLiveAI = async (meetingId: string) => {
@@ -130,11 +121,11 @@ export const getLiveAI = async (meetingId: string) => {
   return res.json();
 };
 
-export const insertTranscript = async (meetingId: string, speaker: string, text: string) => {
+export const insertTranscript = async (meetingId: string, speaker: string, text: string, time?: number) => {
   const res = await fetch(`${API_BASE_URL}/meetings/${meetingId}/transcript`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ speaker, text })
+    body: JSON.stringify({ speaker, text, time: time || 0 })
   });
   if (!res.ok) throw new Error('Failed to insert transcript');
   return res.json();

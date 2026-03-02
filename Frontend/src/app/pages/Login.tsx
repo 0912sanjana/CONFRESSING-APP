@@ -22,7 +22,7 @@ export function Login() {
     if (existingStr) {
       const existingUser = JSON.parse(existingStr);
       if (existingUser.role === 'teacher' || existingUser.role === 'admin') {
-        navigate('/dashboard');
+        navigate('/schedule');
       } else {
         navigate('/student-home');
       }
@@ -51,7 +51,7 @@ export function Login() {
       setLoading(false);
 
       if (mockUser.role === 'teacher' || mockUser.role === 'admin') {
-        navigate('/dashboard');
+        navigate('/schedule');
       } else {
         navigate('/student-home');
       }

@@ -37,6 +37,10 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
   const { send, chatMessages, isSending } = useChat();
   const [chatInput, setChatInput] = useState("");
   const [elapsedTime, setElapsedTime] = useState(0);
+  const elapsedTimeRef = useRef(0);
+  useEffect(() => {
+    elapsedTimeRef.current = elapsedTime;
+  }, [elapsedTime]);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [liveTranscripts, setLiveTranscripts] = useState<any[]>([]);
   const [mediaError, setMediaError] = useState("");
@@ -82,19 +86,14 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
     };
 
     mediaRecorder.onstop = async () => {
-      // If we didn't intend to stop (e.g. user clicked "Stop sharing" on Chrome's built-in banner)
       if (!recordingIntendedStopRef.current) {
-        console.log("Stream ended but class isn't over. Falling back to camera/mic.");
-        try {
-          const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-          setupMediaRecorder(fallbackStream);
-        } catch (e) {
-          console.error("Fallback recording failed", e);
-        }
+        console.warn("Screen share ended unexpectedly by the user without ending class. Warning: Meeting Recording was interrupted and stopped.");
+        setMediaError("Screen Share Stop detected. Recording Interrupted! Please End Class to save.");
+        setIsRecording(false);
+        setIsRecordingPaused(false);
         return;
       }
 
-      // If we *did* intend to stop (End Class button)
       const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
       try {
         await uploadRecording(activeMeetingId, blob);
@@ -118,10 +117,14 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
     if (isRecording) {
       if (mediaRecorderRef.current) {
         if (!isRecordingPaused) {
-          mediaRecorderRef.current.stream.getTracks().forEach(track => track.enabled = false);
+          if (mediaRecorderRef.current.state === 'recording') {
+            mediaRecorderRef.current.pause();
+          }
           setIsRecordingPaused(true);
         } else {
-          mediaRecorderRef.current.stream.getTracks().forEach(track => track.enabled = true);
+          if (mediaRecorderRef.current.state === 'paused') {
+            mediaRecorderRef.current.resume();
+          }
           setIsRecordingPaused(false);
         }
       }
@@ -287,7 +290,7 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
         const transcript = event.results[event.results.length - 1][0].transcript;
         if (transcript.trim().length > 0) {
           const speakerName = devUser.role === 'teacher' ? `Teacher ${devUser.name}` : `Student ${devUser.name}`;
-          insertTranscript(activeMeetingId, speakerName, transcript).catch(e => console.error(e));
+          insertTranscript(activeMeetingId, speakerName, transcript, elapsedTimeRef.current).catch(e => console.error(e));
         }
       };
 
@@ -576,9 +579,17 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
                       <div className="text-xs text-slate-600 space-y-2 font-mono h-40 overflow-y-auto bg-white p-2 rounded border border-slate-200 flex flex-col-reverse">
                         {liveTranscripts.length === 0 ? (
                           <p className="text-slate-400 italic">No transcripts yet.</p>
-                        ) : liveTranscripts.map((t: any, idx: number) => (
-                          <p key={idx}><span className="text-indigo-600 font-bold">{t.speaker}:</span> {t.text}</p>
-                        ))}
+                        ) : liveTranscripts.map((t: any, idx: number) => {
+                          const mins = Math.floor((t.time || 0) / 60);
+                          const secs = Math.floor((t.time || 0) % 60);
+                          const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                          return (
+                            <p key={idx}>
+                              <span className="text-slate-400 text-[10px] mr-1">[{timeStr}]</span>
+                              <span className="text-indigo-600 font-bold">{t.speaker}:</span> {t.text}
+                            </p>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -628,7 +639,7 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
                     </div>
 
                     <button
-                      onClick={() => navigate(devUser.role === 'teacher' ? '/dashboard' : '/student-home')}
+                      onClick={() => navigate(devUser.role === 'teacher' ? '/schedule' : '/student-home')}
                       className="w-full py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors flex items-center justify-center space-x-2"
                     >
                       <ArrowUpRight size={14} />
@@ -886,9 +897,19 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
                     // Set our flag so onstop knows to upload instead of restarting
                     recordingIntendedStopRef.current = true;
                     // This triggers onstop which uploads the video
+
+                    const uploadPromise = new Promise<void>((resolve) => {
+                      const oldOnStop = mediaRecorderRef.current!.onstop;
+                      mediaRecorderRef.current!.onstop = async (e: Event) => {
+                        if (oldOnStop) await (oldOnStop as any)(e);
+                        resolve();
+                      };
+                    });
+
                     mediaRecorderRef.current.stop();
                     mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
                     await stopRecording(activeMeetingId);
+                    await uploadPromise;
                   }
                   await endMeeting(activeMeetingId);
                 } catch (e) {
@@ -896,7 +917,7 @@ function MeetingContent({ activeMeetingId, isRecording, setIsRecording, showRigh
                 }
               }
               room.disconnect();
-              navigate(devUser.role === 'teacher' ? '/dashboard' : '/student-home');
+              navigate(devUser.role === 'teacher' ? '/schedule' : '/student-home');
             }}
             className="flex items-center px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-semibold text-sm transition-colors shadow-lg shadow-red-900/20 cursor-pointer"
           >
